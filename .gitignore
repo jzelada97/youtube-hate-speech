@@ -1,3 +1,8 @@
+# Documentacion interna de planificacion y decisiones - solo local, no se publica
+docs/architecture.md
+docs/enriched-prompt.md
+docs/DECISIONES.md
+
 # Data & model artifacts
 data/raw/*
 data/interim/*
