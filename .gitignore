@@ -2,6 +2,7 @@
 docs/architecture.md
 docs/enriched-prompt.md
 docs/DECISIONES.md
+.kiro/
 
 # Data & model artifacts
 data/raw/*
