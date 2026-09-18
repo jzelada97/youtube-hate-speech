@@ -9,16 +9,18 @@ from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 from hatedet.nlp.cleaner import TextCleaner
+from hatedet.nlp.group_masker import GroupMasker
 from hatedet.nlp.normalizer import Normalizer
 
 
 def build_baseline_pipeline(
     normalizer_method: str | None = "stem",
     max_features: int = 5_000,
-    ngram_range: tuple[int, int] = (1, 1),
-    min_df: int = 8,
+    ngram_range: tuple[int, int] = (1, 2),
+    min_df: int = 5,
     C: float = 0.3,
     l1_ratio: float = 1.0,
+    mask_groups: bool = True,
 ) -> Pipeline:
     """Construye el pipeline baseline sin entrenarlo.
 
@@ -30,6 +32,7 @@ def build_baseline_pipeline(
     return Pipeline(
         steps=[
             ("cleaner", TextCleaner()),
+            ("group_masker", GroupMasker() if mask_groups else "passthrough"),
             ("normalizer", Normalizer(method=normalizer_method)),
             (
                 "tfidf",

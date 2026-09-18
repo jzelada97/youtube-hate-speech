@@ -16,8 +16,8 @@ from hatedet.models.baseline import build_baseline_pipeline
 from hatedet.models.evaluate import evaluate, generalization_gap_pp
 
 MODELS_DIR = Path("models")
-MODEL_PATH = MODELS_DIR / "baseline_v1.joblib"
-METADATA_PATH = MODELS_DIR / "baseline_v1.metadata.json"
+MODEL_PATH = MODELS_DIR / "baseline_v2.joblib"
+METADATA_PATH = MODELS_DIR / "baseline_v2.metadata.json"
 
 
 def main():
@@ -49,7 +49,7 @@ def main():
     joblib.dump(pipeline, MODEL_PATH)
 
     metadata = {
-        "model_version": "baseline_v1",
+        "model_version": "baseline_v2",
         "target_column": TARGET_COLUMN,
         "train_size": len(train),
         "val_size": len(val),

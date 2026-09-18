@@ -23,7 +23,7 @@ def test_pipeline_is_a_single_serializable_object():
     """Regresion de la decision 'sin skew train/serve': todo debe vivir en un unico Pipeline."""
     pipeline = build_baseline_pipeline()
     step_names = [name for name, _ in pipeline.steps]
-    assert step_names == ["cleaner", "normalizer", "tfidf", "clf"]
+    assert step_names == ["cleaner", "group_masker", "normalizer", "tfidf", "clf"]
 
 
 def test_generalization_gap_meets_client_requirement():
