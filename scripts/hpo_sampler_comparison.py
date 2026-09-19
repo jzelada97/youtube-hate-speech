@@ -8,10 +8,11 @@ Espacio (todo numerico, para poder comparar TODOS los metodos en igualdad):
 Objetivo: F1-macro medio de una CV estratificada de 5 folds con FOLDS FIJOS (objetivo determinista:
 aisla la calidad del muestreador del ruido de la CV). El texto se normaliza una sola vez (es independiente
 de estos hiperparametros) para que cada evaluacion cueste ~0.3 s.
-Metodos: Random, TPE, CMA-ES (Optuna) y un proceso gaussiano + Expected Improvement propio (scikit-learn),
-todos con el mismo presupuesto. Se repite con varias semillas y se compara la mejor-hasta-ahora por intento.
+Metodos: Random, TPE, CMA-ES y GPSampler (Optuna; el GPSampler requiere torch) y un proceso gaussiano +
+Expected Improvement propio (scikit-learn), todos con el mismo presupuesto. Se repite con varias semillas y se compara la mejor-hasta-ahora por intento.
 """
 
+import json
 import sys
 import time
 from pathlib import Path
@@ -145,15 +146,22 @@ def main():
     plt.close(fig)
 
     print("2) Comparando muestreadores ...", flush=True)
-    curves = {"Aleatorio": [], "TPE": [], "CMA-ES": [], "Proceso gaussiano + EI": []}
+    curves = {"Aleatorio": [], "TPE": [], "CMA-ES": [], "GP propio (sklearn) + EI": [], "GP de Optuna (GPSampler)": []}
     for seed in range(SEEDS):
         curves["Aleatorio"].append(run_optuna(optuna.samplers.RandomSampler(seed=seed), BUDGET))
         curves["TPE"].append(run_optuna(optuna.samplers.TPESampler(seed=seed, n_startup_trials=N_INIT), BUDGET))
         curves["CMA-ES"].append(run_optuna(optuna.samplers.CmaEsSampler(seed=seed), BUDGET))
-        curves["Proceso gaussiano + EI"].append(run_gp(seed, BUDGET))
+        curves["GP propio (sklearn) + EI"].append(run_gp(seed, BUDGET))
+        curves["GP de Optuna (GPSampler)"].append(
+            run_optuna(optuna.samplers.GPSampler(seed=seed, n_startup_trials=N_INIT), BUDGET)
+        )
         print(f"   semilla {seed + 1}/{SEEDS} hecha ({time.time() - t0:.0f} s)", flush=True)
 
     best_known = max(max(_CACHE.values()), grid.max())
+    (FIG_DIR.parent / "hpo_results.json").write_text(json.dumps({
+        "best_known": best_known, "budget": BUDGET, "seeds": SEEDS,
+        "importance": importance, "curves": {k: [list(map(float, c)) for c in v] for k, v in curves.items()},
+    }, indent=1))
     print(f"\nMejor F1-macro visto por cualquier metodo: {best_known:.4f}")
     print(f"Regret medio (mejor conocido - mejor encontrado) tras N intentos, {SEEDS} semillas:")
     checkpoints = [10, 20, 30, 40]
@@ -168,7 +176,8 @@ def main():
         print(f"  {name:26s} {np.mean(hits):5.1f}  (seeds que llegan: {sum(np.array(c).max() >= best_known - 0.005 for c in cs)}/{SEEDS})")
 
     fig, ax = plt.subplots(figsize=(8, 4.5))
-    colors = {"Aleatorio": "#888780", "TPE": "#1baf7a", "CMA-ES": "#eb6834", "Proceso gaussiano + EI": "#2a78d6"}
+    colors = {"Aleatorio": "#888780", "TPE": "#1baf7a", "CMA-ES": "#eb6834",
+              "GP propio (sklearn) + EI": "#2a78d6", "GP de Optuna (GPSampler)": "#6250d6"}
     x = np.arange(1, BUDGET + 1)
     for name, cs in curves.items():
         arr = np.array(cs)

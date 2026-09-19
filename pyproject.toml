@@ -33,6 +33,7 @@ dev = [
 hpo = [
     "optuna>=4.0",
     "cmaes>=0.10",
+    "torch>=2.2",
 ]
 
 [tool.pytest.ini_options]
