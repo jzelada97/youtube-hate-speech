@@ -20,5 +20,5 @@ jobs:
           pip install -e ".[dev,serve]"
           python -m spacy download en_core_web_sm
           python -c "import nltk; [nltk.download(p) for p in ('stopwords', 'wordnet', 'omw-1.4')]"
-      - name: Tests (los que necesitan el dataset se saltan: no se versiona)
+      - name: "Tests (los que necesitan el dataset se saltan porque no se versiona)"
         run: python -m pytest -q --cov=src/hatedet --cov-report=term-missing
