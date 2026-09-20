@@ -1,0 +1,17 @@
+.git
+.venv
+.claude
+.kiro
+__pycache__
+*.pyc
+data
+models
+notebooks
+reports
+docs
+tests
+scripts
+extension
+mlruns
+*.db
+.env

@@ -22,3 +22,10 @@ jobs:
           python -c "import nltk; [nltk.download(p) for p in ('stopwords', 'wordnet', 'omw-1.4')]"
       - name: "Tests (los que necesitan el dataset se saltan porque no se versiona)"
         run: python -m pytest -q --cov=src/hatedet --cov-report=term-missing
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir la imagen (comprueba que el Dockerfile y las dependencias son coherentes)
+        run: docker build -t hatedet:ci .
