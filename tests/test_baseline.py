@@ -1,7 +1,11 @@
+import pytest
 from hatedet.data.loader import load_raw_comments
 from hatedet.data.schema import TARGET_COLUMN, TEXT_COLUMN
 from hatedet.data.splitter import stratified_split
 from hatedet.models.baseline import build_baseline_pipeline
+
+
+pytestmark = pytest.mark.requires_data
 
 
 def test_pipeline_fits_and_predicts_on_real_data():
