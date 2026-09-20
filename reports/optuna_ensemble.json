@@ -1,0 +1,35 @@
+{
+ "n_trials": 40,
+ "feasible": 14,
+ "gap_limit_pp": 5.0,
+ "baseline": {
+  "pr_auc": 0.4419924854877045,
+  "gap_pp": 2.664848528169945
+ },
+ "default_ensemble": {
+  "pr_auc": 0.4634766343816349,
+  "gap_pp": 17.332193101469656
+ },
+ "tuned": {
+  "params": {
+   "lr_word_C": 0.2166672152890758,
+   "lr_word_min_df": 8,
+   "lr_word_ngram_max": 2,
+   "lr_char_C": 0.014228484400562623,
+   "lr_char_min_df": 2,
+   "lr_char_max_features": 4628,
+   "nb_alpha": 0.14761276201086748,
+   "nb_min_df": 10,
+   "w_lr_word": 4,
+   "w_lr_char": 3,
+   "w_nb": 1
+  },
+  "pr_auc": 0.4546245378754222,
+  "gap_pp": 4.702864085423032,
+  "f1": 0.712648283313466,
+  "diff_vs_baseline": 0.01263205238771783,
+  "folds_better": 16,
+  "wilcoxon_p": 0.039989471435546875
+ },
+ "adopted": "ensemble optimizado"
+}

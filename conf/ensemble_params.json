@@ -1,0 +1,13 @@
+{
+  "lr_word_C": 0.2166672152890758,
+  "lr_word_min_df": 8,
+  "lr_word_ngram_max": 2,
+  "lr_char_C": 0.014228484400562623,
+  "lr_char_min_df": 2,
+  "lr_char_max_features": 4628,
+  "nb_alpha": 0.14761276201086748,
+  "nb_min_df": 10,
+  "w_lr_word": 4,
+  "w_lr_char": 3,
+  "w_nb": 1
+}

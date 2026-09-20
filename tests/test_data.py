@@ -6,6 +6,9 @@ from hatedet.data.schema import REQUIRED_COLUMNS, TARGET_COLUMN, VIDEO_ID_COLUMN
 from hatedet.data.splitter import stratified_split, video_holdout_split
 
 
+pytestmark = pytest.mark.requires_data
+
+
 def test_load_raw_comments_has_required_columns_and_no_duplicate_text():
     df = load_raw_comments()
     assert list(df.columns) == REQUIRED_COLUMNS

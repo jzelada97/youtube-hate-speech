@@ -28,19 +28,22 @@ with st.sidebar:
     headers = {"X-API-Key": api_key} if api_key else {}
 
 
-def call(path: str, payload: dict | None = None):
+def call(path: str, payload: dict | None = None, method: str | None = None, quiet: bool = False):
+    method = method or ("post" if payload is not None else "get")
     try:
-        r = (httpx.post if payload is not None else httpx.get)(
+        r = getattr(httpx, method)(
             f"{api_url.rstrip('/')}{path}", **({"json": payload} if payload is not None else {}),
-            headers=headers, timeout=30,
+            headers=headers, timeout=60,
         )
         r.raise_for_status()
         return r.json()
     except httpx.HTTPStatusError as e:
-        st.error(f"La API respondió {e.response.status_code}: {e.response.text[:200]}")
+        if not quiet:
+            st.error(f"La API respondió {e.response.status_code}: {e.response.text[:200]}")
     except httpx.HTTPError:
-        st.error(f"No se pudo conectar con la API en {api_url}. ¿Está en marcha? "
-                 "`uvicorn hatedet.api.main:app --port 8000`")
+        if not quiet:
+            st.error(f"No se pudo conectar con la API en {api_url}. ¿Está en marcha? "
+                     "`uvicorn hatedet.api.main:app --port 8000`")
     return None
 
 
@@ -58,7 +61,7 @@ if health:
         st.success(f"API conectada · modelo `{health['model_version']}`")
         st.caption(f"Umbrales: revisar ≥ {thr['t_low']:.2f} · ocultar ≥ {thr['t_high']:.2f}")
 
-tab_one, tab_many = st.tabs(["Un comentario", "Varios comentarios"])
+tab_one, tab_many, tab_video = st.tabs(["Un comentario", "Varios comentarios", "Vídeo de YouTube"])
 
 with tab_one:
     text = st.text_area("Escribe o pega un comentario", height=120, max_chars=5000)
@@ -74,6 +77,25 @@ with tab_many:
             for text_i, pred in zip(items, out["predictions"]):
                 icon, name, _ = BAND_STYLE[pred["band"]]
                 st.text(f"{icon} {pred['score']:.0%}  {text_i[:160]}")
+
+with tab_video:
+    st.caption("Descarga los comentarios más recientes del vídeo y muestra cuántos caen en cada banda.")
+    video_url = st.text_input("URL del vídeo", placeholder="https://www.youtube.com/watch?v=...")
+    max_c = st.slider("Comentarios a analizar", 20, 500, 100, step=20)
+    if st.button("Analizar vídeo", type="primary", disabled=not video_url.strip()):
+        with st.spinner("Descargando y analizando comentarios…"):
+            report = call("/analyze/video", {"url": video_url, "max_comments": max_c})
+        if report:
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Comentarios analizados", report["n_comments"])
+            c2.metric("Marcados (revisar u ocultar)", f"{report['share_flagged']:.0%}")
+            c3.metric("Ocultar (recomendado)", report["counts"]["ocultar"])
+            st.bar_chart({"comentarios": report["counts"]}, horizontal=True)
+            st.subheader("Más sospechosos")
+            for f in report["flagged"]:
+                st.text(f"{BAND_STYLE[f['band']][0]} {f['score']:.0%}  {f['text'][:200]}")
+            if not report["flagged"]:
+                st.success("Ningún comentario supera el umbral de revisión.")
 
 with st.expander("¿Qué tan fiable es? (léelo antes de fiarte)"):
     st.markdown(

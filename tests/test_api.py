@@ -82,6 +82,7 @@ def test_cors_allows_extension_and_localhost_but_not_other_origins(client):
     assert "access-control-allow-origin" not in bad.headers
 
 
+@pytest.mark.requires_data
 def test_end_to_end_with_real_pipeline_from_raw_text():
     from hatedet.data.loader import load_raw_comments
     from hatedet.models.baseline import build_baseline_pipeline
