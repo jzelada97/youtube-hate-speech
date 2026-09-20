@@ -1,0 +1,28 @@
+# Sustituye hate.tudominio.com por tu dominio. Caddy gestiona el certificado HTTPS automaticamente.
+hate.tudominio.com {
+	encode gzip
+
+	# Streamlit (demo) bajo /demo/ ; necesita websockets, que Caddy proxifica sin configuracion extra.
+	handle_path /demo/* {
+		reverse_proxy 127.0.0.1:8501
+	}
+
+	# API (todo lo demas)
+	handle {
+		reverse_proxy 127.0.0.1:8000
+	}
+
+	# No registrar cuerpos de peticion (contienen comentarios de usuarios)
+	log {
+		output file /var/log/caddy/hatedet.log
+		format filter {
+			request delete
+		}
+	}
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		-Server
+	}
+}
