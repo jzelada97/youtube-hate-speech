@@ -32,6 +32,10 @@ dev = [
     "youtube-comment-downloader>=0.1.83",
 ]
 
+nn = [
+    "torch>=2.2",
+]
+
 hpo = [
     "optuna>=4.0",
     "cmaes>=0.10",
