@@ -21,6 +21,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field, field_validator
 
+from hatedet.data.schema import LABEL_COLUMNS
+from hatedet.db.store import ReviewStore
 from hatedet.models.bands import band_for
 from hatedet.youtube.analysis import VideoReport, analyze
 from hatedet.youtube.monitor import MonitorRegistry, RegistryFull
@@ -79,6 +81,33 @@ class VideoRequest(BaseModel):
     max_comments: int = Field(default=100, ge=1, le=MAX_VIDEO_COMMENTS)
 
 
+class QueueItem(BaseModel):
+    text: str = Field(min_length=1, max_length=MAX_TEXT_CHARS)
+    comment_id: str | None = Field(default=None, max_length=100)
+    video_id: str | None = Field(default=None, max_length=32)
+
+
+class QueueRequest(BaseModel):
+    items: list[QueueItem] = Field(min_length=1, max_length=MAX_BATCH)
+    only_flagged: bool = Field(default=True, description="Encolar solo lo que cae en revisar/ocultar")
+
+
+class Verdict(BaseModel):
+    """Veredicto humano. `tags` acepta los nombres de etiqueta del dataset (IsRacist, IsThreat...)."""
+
+    is_hatespeech: bool
+    tags: list[str] = Field(default_factory=list, max_length=len(LABEL_COLUMNS))
+    reviewer: str | None = Field(default=None, max_length=80)
+
+    @field_validator("tags")
+    @classmethod
+    def known_tags(cls, v: list[str]) -> list[str]:
+        unknown = [t for t in v if t not in LABEL_COLUMNS]
+        if unknown:
+            raise ValueError(f"etiquetas desconocidas: {unknown}")
+        return v
+
+
 def default_model_path() -> str:
     """Modelo por defecto: el ensemble solo si existe Y cumple el requisito de gap (< 5 pp); si no, el baseline."""
     preferred = Path(PREFERRED_MODEL_PATH)
@@ -99,11 +128,18 @@ def _load_artifacts(model_path: str):
     return pipeline, metadata
 
 
+def default_review_store() -> ReviewStore | None:
+    """Cola de revision: apagada salvo que se defina HATEDET_REVIEW_DB (guarda texto, ver db/store.py)."""
+    path = os.getenv("HATEDET_REVIEW_DB")
+    return ReviewStore(path) if path else None
+
+
 def create_app(
     pipeline=None, metadata: dict | None = None, comment_source: CommentSource | None = None,
-    monitor_autostart: bool = True,
+    monitor_autostart: bool = True, review_store: ReviewStore | None = None,
 ) -> FastAPI:
-    """Fabrica la app. `pipeline`/`metadata`/`comment_source` permiten inyectar dependencias (tests)."""
+    """Fabrica la app. `pipeline`/`metadata`/`comment_source`/`review_store` se inyectan en los tests."""
+    store = review_store if review_store is not None else default_review_store()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -150,10 +186,15 @@ def create_app(
             for s in scores
         ]
 
+    def require_store() -> ReviewStore:
+        if store is None:
+            raise HTTPException(status_code=503, detail="Cola de revision desactivada (define HATEDET_REVIEW_DB)")
+        return store
+
     @app.get("/health")
     def health(request: Request):
         st = request.app.state
-        return {"status": "ok", "model_version": st.version,
+        return {"status": "ok", "model_version": st.version, "review_enabled": store is not None,
                 "thresholds": {"t_low": st.t_low, "t_high": st.t_high}}
 
     @app.post("/predict", response_model=Prediction, dependencies=[Depends(check_key)])
@@ -203,6 +244,37 @@ def create_app(
         if not request.app.state.monitors.stop(session_id):
             raise HTTPException(status_code=404, detail="Sesion desconocida o caducada")
         return {"stopped": True}
+
+    @app.post("/review/queue", dependencies=[Depends(check_key)])
+    def review_queue(body: QueueRequest, request: Request):
+        """Puntua los comentarios y encola los que necesitan mirada humana."""
+        db = require_store()
+        st = request.app.state
+        preds = score_texts(request, [i.text for i in body.items])
+        selected = [
+            {"text": item.text, "comment_id": item.comment_id, "video_id": item.video_id,
+             "score": pred.score, "band": pred.band}
+            for item, pred in zip(body.items, preds)
+            if not body.only_flagged or pred.band != "permitir"
+        ]
+        return {"encolados": db.enqueue(selected, st.version), "candidatos": len(selected)}
+
+    @app.get("/review/pending", dependencies=[Depends(check_key)])
+    def review_pending(limit: int = 20):
+        db = require_store()
+        return {"items": [vars(i) for i in db.pending(max(1, min(limit, MAX_BATCH)))],
+                "etiquetas_disponibles": LABEL_COLUMNS}
+
+    @app.post("/review/{review_id}", dependencies=[Depends(check_key)])
+    def review_resolve(review_id: int, body: Verdict):
+        db = require_store()
+        if not db.resolve(review_id, body.is_hatespeech, body.tags, body.reviewer):
+            raise HTTPException(status_code=404, detail="No existe ese elemento en la cola")
+        return {"resuelto": review_id}
+
+    @app.get("/review/stats", dependencies=[Depends(check_key)])
+    def review_stats():
+        return require_store().stats()
 
     return app
 

@@ -61,8 +61,8 @@ if health:
         st.success(f"API conectada · modelo `{health['model_version']}`")
         st.caption(f"Umbrales: revisar ≥ {thr['t_low']:.2f} · ocultar ≥ {thr['t_high']:.2f}")
 
-tab_one, tab_many, tab_video, tab_live = st.tabs(
-    ["Un comentario", "Varios comentarios", "Vídeo de YouTube", "En directo"]
+tab_one, tab_many, tab_video, tab_live, tab_review = st.tabs(
+    ["Un comentario", "Varios comentarios", "Vídeo de YouTube", "En directo", "Revisión humana"]
 )
 
 with tab_one:
@@ -138,6 +138,44 @@ with tab_live:
             st.text(f"{BAND_STYLE[e['band']][0]} {e['score']:.0%}  {e['text'][:160]}")
 
     live_panel()
+
+with tab_review:
+    st.caption("Los comentarios marcados esperan aquí a que una persona decida. El veredicto y las etiquetas "
+               "alimentan el reentrenamiento (`python scripts/retrain.py`).")
+    if not (health or {}).get("review_enabled"):
+        st.info("La cola de revisión está desactivada. Arranca la API con `HATEDET_REVIEW_DB=data/review.db` "
+                "para activarla (guarda el texto de los comentarios: ver la nota de RGPD del README).")
+    else:
+        stats = call("/review/stats", quiet=True) or {}
+        s1, s2, s3 = st.columns(3)
+        s1.metric("Pendientes", stats.get("pendientes", 0))
+        s2.metric("Ya revisados", stats.get("revisados", 0))
+        acuerdo = stats.get("acuerdo_con_el_modelo")
+        s3.metric("Acuerdo con el modelo", "—" if acuerdo is None else f"{acuerdo:.0%}",
+                  help="Cuántas veces el veredicto humano coincidió con el modelo. Si baja, toca reentrenar.")
+
+        queue_text = st.text_area("Encolar comentarios para revisar (uno por línea)", height=100, key="rq")
+        if st.button("Encolar", disabled=not queue_text.strip()):
+            items = [{"text": t} for t in queue_text.splitlines() if t.strip()][:200]
+            if out := call("/review/queue", {"items": items}):
+                st.success(f"{out['encolados']} encolados de {len(items)} enviados "
+                           "(solo se encola lo que cae en revisar u ocultar).")
+
+        pending = (call("/review/pending?limit=10", quiet=True) or {}).get("items", [])
+        etiquetas = (call("/review/pending?limit=1", quiet=True) or {}).get("etiquetas_disponibles", [])
+        if not pending:
+            st.success("No hay nada pendiente de revisar.")
+        for item in pending:
+            with st.container(border=True):
+                st.text(f"{BAND_STYLE[item['band']][0]} {item['score']:.0%}  ·  {item['model_version']}")
+                st.text(item["text"][:1000])
+                tags = st.multiselect("Etiquetas", etiquetas, key=f"tags{item['id']}",
+                                      help="Las mismas 12 del dataset del cliente, para que los datos sean compatibles.")
+                yes, no = st.columns(2)
+                for label, verdict, col in [("Es odio", True, yes), ("No es odio", False, no)]:
+                    if col.button(label, key=f"{label}{item['id']}"):
+                        if call(f"/review/{item['id']}", {"is_hatespeech": verdict, "tags": tags}):
+                            st.rerun()
 
 with st.expander("¿Qué tan fiable es? (léelo antes de fiarte)"):
     st.markdown(

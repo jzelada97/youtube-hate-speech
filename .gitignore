@@ -2,6 +2,8 @@
 docs/architecture.md
 docs/enriched-prompt.md
 docs/DECISIONES.md
+docs/PRESENTACION.md
+docs/visualizaciones/
 .kiro/
 
 # Data & model artifacts
@@ -12,6 +14,11 @@ data/external/*
 !data/*/.gitkeep
 models/*
 !models/.gitkeep
+
+# Cola de revision: contiene texto de comentarios reales (RGPD, ver docs/DECISIONES.md 14.3)
+data/*.db
+*.db-wal
+*.db-shm
 
 # Python
 __pycache__/

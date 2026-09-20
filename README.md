@@ -69,6 +69,10 @@ Los datos y los modelos entrenados **no se versionan** (contienen comentarios re
 | POST | `/monitor/start` | `{"url": "...", "poll_seconds": 30}` → `{session_id}`; inicia el seguimiento en directo |
 | GET | `/monitor/{id}/events?after=N` | Comentarios nuevos clasificados desde el cursor `N` (`{events, next, active, expires_in}`) |
 | DELETE | `/monitor/{id}` | Detiene el seguimiento |
+| POST | `/review/queue` | `{"items": [{"text": "..."}]}` → encola para revisión humana lo que cae en `revisar`/`ocultar` |
+| GET | `/review/pending?limit=20` | Cola pendiente, los más sospechosos primero, con las etiquetas disponibles |
+| POST | `/review/{id}` | `{"is_hatespeech": true, "tags": ["IsRacist"]}` → registra el veredicto del moderador |
+| GET | `/review/stats` | Pendientes, revisados y **acuerdo con el modelo** (indicador de deriva) |
 
 ```bash
 curl -X POST localhost:8000/predict -H 'Content-Type: application/json' -d '{"text":"All these people are criminals"}'
@@ -82,8 +86,32 @@ con la API oficial de YouTube si defines `YOUTUBE_API_KEY`, o con un extractor s
 menos estable y sujeto a las condiciones de servicio de YouTube).
 
 Variables de entorno: `HATEDET_MODEL_PATH`, `HATEDET_API_KEY` (si se define, exige cabecera `X-API-Key`),
-`HATEDET_T_LOW` / `HATEDET_T_HIGH` (umbrales), `HATEDET_CORS_REGEX`, `YOUTUBE_API_KEY`. La API **no registra el
-texto** de los comentarios. Documentación interactiva en `/docs`.
+`HATEDET_T_LOW` / `HATEDET_T_HIGH` (umbrales), `HATEDET_CORS_REGEX`, `YOUTUBE_API_KEY`, `HATEDET_REVIEW_DB`.
+La API **no registra el texto** de los comentarios (única excepción: la cola de revisión, ver abajo).
+Documentación interactiva en `/docs`.
+
+## Revisión humana y reentrenamiento
+
+La banda `revisar` significa que **una persona debe mirarlo**, así que hay dónde hacerlo. El ciclo completo es
+**marcar → revisar → etiquetar → reentrenar**:
+
+```bash
+HATEDET_REVIEW_DB=data/review.db uvicorn hatedet.api.main:app --port 8000   # activa la cola
+streamlit run src/hatedet/ui/app.py                                        # pestaña «Revisión humana»
+python scripts/retrain.py --dry-run                                        # evalúa sin tocar producción
+python scripts/retrain.py                                                  # reentrena y promociona si pasa el filtro
+```
+
+El moderador ve primero lo más sospechoso y etiqueta con **las 12 categorías del dataset original**, así que los
+datos nuevos son directamente compatibles. `retrain.py` incorpora esos veredictos pero **solo sustituye el modelo
+si pasa un filtro**: al menos 20 veredictos nuevos, cumplir el requisito de gap (< 5 pp) y no empeorar el PR-AUC
+de forma significativa en una comparación pareada. Si no pasa, el modelo en producción no se toca y el motivo
+queda escrito en `reports/retrain_<fecha>.json`. `GET /review/stats` da el **acuerdo entre el humano y el
+modelo**: cuando esa cifra baja, toca reentrenar.
+
+> **Privacidad**: esta es la única pieza que almacena el texto de comentarios reales, porque revisar sin ver es
+> imposible. Está **apagada por defecto** (solo se activa con `HATEDET_REVIEW_DB`), nunca guarda el nombre del
+> autor, tiene política de retención (`purge_older_than`) y su base de datos está fuera del repositorio.
 
 ## Seguimiento en directo
 
@@ -132,8 +160,8 @@ servidor y HTTPS (ver privacidad en su README).
 |---|---|---|
 | Esencial | Modelo ML + API/interfaz + repo documentado | ✅ |
 | Medio | Ensemble + análisis por URL de vídeo + tests + tuning (Optuna) | ✅ |
-| Avanzado | LSTM + seguimiento en tiempo real + despliegue público + Docker | Implementado (LSTM **sin** mejora sobre ML clásico; despliegue: guía lista, lo ejecuta el usuario) |
-| Experto | Transformer + persistencia en BD + MLflow | Pendiente |
+| Avanzado | LSTM + seguimiento en tiempo real + despliegue público + Docker | ✅ Implementado (LSTM **sin** mejora sobre ML clásico, resultado medido y documentado; despliegue: guía lista, lo ejecuta el usuario) |
+| Experto | Transformer + persistencia en BD + MLflow | Parcial: **persistencia en BD hecha** (cola de revisión); transformer y MLflow pendientes |
 
 ## Estructura
 
