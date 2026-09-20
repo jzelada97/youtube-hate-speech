@@ -4,8 +4,9 @@ Detector de mensajes de odio en comentarios de YouTube, desarrollado como soluci
 Prioriza una solución **práctica e implementable**: en lugar de un booleano, devuelve una probabilidad y una
 **banda de decisión** (`permitir` / `revisar` / `ocultar`). El sistema **recomienda**; un humano decide.
 
-> **Estado: niveles Esencial y Medio completos** (modelo ensemble + API + análisis por URL de vídeo + demo + tests).
-> Avanzado y Experto en el roadmap.
+> **Estado: niveles Esencial, Medio y Avanzado implementados** (ensemble, análisis por URL, seguimiento en directo,
+> red recurrente evaluada, Docker, extensión de navegador). El despliegue público en una VM se hace con la guía de
+> [`deploy/`](deploy/README.md). Experto (transformer, base de datos, MLflow) en el roadmap.
 
 ## Resultados (léelos con sentido crítico)
 
@@ -65,6 +66,9 @@ Los datos y los modelos entrenados **no se versionan** (contienen comentarios re
 | POST | `/predict` | `{"text": "..."}` → `{label, score, band, model_version}` |
 | POST | `/predict/batch` | `{"texts": [...]}` (máx. 200) → `{predictions: [...]}` |
 | POST | `/analyze/video` | `{"url": "...", "max_comments": 100}` (máx. 500) → informe agregado del vídeo |
+| POST | `/monitor/start` | `{"url": "...", "poll_seconds": 30}` → `{session_id}`; inicia el seguimiento en directo |
+| GET | `/monitor/{id}/events?after=N` | Comentarios nuevos clasificados desde el cursor `N` (`{events, next, active, expires_in}`) |
+| DELETE | `/monitor/{id}` | Detiene el seguimiento |
 
 ```bash
 curl -X POST localhost:8000/predict -H 'Content-Type: application/json' -d '{"text":"All these people are criminals"}'
@@ -81,23 +85,65 @@ Variables de entorno: `HATEDET_MODEL_PATH`, `HATEDET_API_KEY` (si se define, exi
 `HATEDET_T_LOW` / `HATEDET_T_HIGH` (umbrales), `HATEDET_CORS_REGEX`, `YOUTUBE_API_KEY`. La API **no registra el
 texto** de los comentarios. Documentación interactiva en `/docs`.
 
+## Seguimiento en directo
+
+YouTube **no ofrece avisos en tiempo real** de comentarios nuevos, así que el seguimiento se hace por **sondeo**: la API
+consulta los comentarios recientes cada `poll_seconds` (10–300 s), descarta los ya vistos y clasifica los nuevos. Cada
+sesión caduca a los 30 minutos y hay un máximo de sesiones simultáneas (`HATEDET_MAX_MONITORS`, por defecto 5) para no
+agotar recursos. La pestaña «En directo» de la demo lo usa; la extensión de navegador clasifica lo que el usuario ya ve.
+
+## Red neuronal: resultado (negativo) y por qué
+
+Se implementó una red recurrente bidireccional (BiLSTM/BiGRU, PyTorch) con parada temprana y regularización, y se evaluó
+con la **misma CV pareada** que el resto (10 particiones; `python scripts/eval_lstm.py glove`):
+
+| Modelo | PR-AUC | F1-macro (mejor umbral) | Precisión al 70 % de recall |
+|---|---:|---:|---:|
+| Baseline (TF-IDF + regresión logística L1) | 0.459 | 0.740 | 0.461 |
+| Ensemble | 0.491 | 0.742 | 0.445 |
+| BiLSTM desde cero | 0.392 | 0.708 | 0.318 |
+| BiLSTM + GloVe (embeddings preentrenados, congelados) | 0.445 | 0.717 | 0.359 |
+
+Desde cero es **significativamente peor** que el baseline; con GloVe cierra casi todo el hueco en ranking (PR-AUC
+estadísticamente igual) pero **no lo supera**. Conclusión: con ~800 comentarios de entrenamiento una red recurrente no
+mejora a ML clásico; el siguiente paso con más potencial es un transformer preentrenado (nivel Experto). El código
+sigue disponible (`python scripts/train.py --model lstm`, extra `pip install -e ".[nn]"`), pero no es el modelo servido.
+
+## Docker
+
+```bash
+# 1) entrena el modelo (o copia models/ensemble_v1.joblib al servidor): python scripts/train.py --model ensemble
+cp .env.example .env && docker compose --env-file .env up -d --build
+curl http://127.0.0.1:8000/health          # API;  demo en http://127.0.0.1:8501
+```
+Imagen con usuario no root, sistema de ficheros de solo lectura, healthcheck y puertos solo en `127.0.0.1`. El modelo no
+va en la imagen: se monta como volumen de solo lectura. Para publicarlo (HTTPS, clave de API, firewall) sigue
+[`deploy/README.md`](deploy/README.md).
+
+## Extensión de navegador
+
+[`extension/`](extension/README.md): extensión Manifest V3 que marca en YouTube los comentarios sospechosos usando la API.
+Se instala en modo desarrollador. **El texto de los comentarios visibles se envía a la API que configures**: usa tu propio
+servidor y HTTPS (ver privacidad en su README).
+
 ## Niveles de entrega
 
 | Nivel | Contenido | Estado |
 |---|---|---|
 | Esencial | Modelo ML + API/interfaz + repo documentado | ✅ |
 | Medio | Ensemble + análisis por URL de vídeo + tests + tuning (Optuna) | ✅ |
-| Avanzado | LSTM + seguimiento en tiempo real + despliegue público + Docker | En curso |
+| Avanzado | LSTM + seguimiento en tiempo real + despliegue público + Docker | Implementado (LSTM **sin** mejora sobre ML clásico; despliegue: guía lista, lo ejecuta el usuario) |
 | Experto | Transformer + persistencia en BD + MLflow | Pendiente |
 
 ## Estructura
 
 ```
 src/hatedet/  data/ (carga, splits, augmentation) · nlp/ (limpieza, normalización, máscara de grupos)
-              models/ (baseline, ensemble, evaluación, bandas) · youtube/ (URL, fuentes, análisis)
+              models/ (baseline, ensemble, lstm, glove, evaluación, bandas) · youtube/ (URL, fuentes, análisis, monitor)
               api/ (FastAPI) · ui/ (Streamlit)
 scripts/      train.py · compare_models.py · tune_optuna.py · eda.py · find_label_issues.py · eval_augmentation.py
 notebooks/    01_eda.ipynb
+extension/    extensión de navegador (Manifest V3) · deploy/ guía de despliegue en VM · Dockerfile, docker-compose.yml
 tests/        pytest (`python -m pytest --cov=src/hatedet`; los que necesitan el dataset se saltan si no está)
 ```
 

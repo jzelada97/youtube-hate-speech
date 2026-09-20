@@ -1,0 +1,14 @@
+:root { color-scheme: light dark; }
+body { width: 330px; margin: 0; padding: 14px 16px 16px; font: 13px/1.5 system-ui, "Segoe UI", Roboto, sans-serif; }
+h1 { font-size: 16px; font-weight: 500; margin: 0 0 4px; }
+label { display: block; margin: 10px 0 0; }
+label.row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+input[type=url], input[type=password], select { width: 100%; box-sizing: border-box; margin-top: 4px; padding: 6px 8px; font: inherit; }
+.buttons { display: flex; gap: 8px; margin-top: 14px; }
+button { flex: 1; padding: 7px 10px; font: inherit; cursor: pointer; }
+button.secondary { opacity: 0.85; }
+.muted { opacity: 0.7; margin: 4px 0; }
+.small { font-size: 11px; margin-top: 12px; }
+#status { min-height: 18px; margin: 10px 0 0; }
+#status.ok { color: #2a7a3b; }
+#status.err { color: #c0392b; }

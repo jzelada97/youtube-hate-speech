@@ -61,7 +61,9 @@ if health:
         st.success(f"API conectada · modelo `{health['model_version']}`")
         st.caption(f"Umbrales: revisar ≥ {thr['t_low']:.2f} · ocultar ≥ {thr['t_high']:.2f}")
 
-tab_one, tab_many, tab_video = st.tabs(["Un comentario", "Varios comentarios", "Vídeo de YouTube"])
+tab_one, tab_many, tab_video, tab_live = st.tabs(
+    ["Un comentario", "Varios comentarios", "Vídeo de YouTube", "En directo"]
+)
 
 with tab_one:
     text = st.text_area("Escribe o pega un comentario", height=120, max_chars=5000)
@@ -96,6 +98,46 @@ with tab_video:
                 st.text(f"{BAND_STYLE[f['band']][0]} {f['score']:.0%}  {f['text'][:200]}")
             if not report["flagged"]:
                 st.success("Ningún comentario supera el umbral de revisión.")
+
+with tab_live:
+    st.caption("Seguimiento en vivo por sondeo (YouTube no ofrece avisos en tiempo real): la API consulta "
+               "los comentarios nuevos cada pocos segundos. Máximo 30 minutos por sesión.")
+    ss = st.session_state
+    live_url = st.text_input("URL del vídeo a vigilar", key="live_url", placeholder="https://www.youtube.com/watch?v=...")
+    poll = st.select_slider("Cada cuántos segundos consultar", options=[10, 15, 30, 60, 120], value=30)
+    start_col, stop_col = st.columns(2)
+    if start_col.button("Empezar seguimiento", type="primary", disabled=not live_url.strip()):
+        started = call("/monitor/start", {"url": live_url, "poll_seconds": poll})
+        if started:
+            ss.update(live_sid=started["session_id"], live_cursor=0, live_events=[], live_error=None)
+    if stop_col.button("Detener", disabled="live_sid" not in ss):
+        call(f"/monitor/{ss.pop('live_sid')}", method="delete", quiet=True)
+
+    @st.fragment(run_every=5)
+    def live_panel():
+        sid = st.session_state.get("live_sid")
+        if not sid:
+            st.info("Sin seguimiento activo.")
+            return
+        data = call(f"/monitor/{sid}/events?after={st.session_state.live_cursor}", quiet=True)
+        if data is None:
+            st.warning("La sesión terminó o caducó.")
+            st.session_state.pop("live_sid", None)
+            return
+        st.session_state.live_events = (st.session_state.live_events + data["events"])[-200:]
+        st.session_state.live_cursor = data["next"]
+        events = st.session_state.live_events
+        flagged = [e for e in events if e["band"] != "permitir"]
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Comentarios vistos", len(events))
+        m2.metric("Marcados", len(flagged))
+        m3.metric("Caduca en", f"{data['expires_in'] // 60} min")
+        if data["error"]:
+            st.caption(f"Último error al consultar YouTube: {data['error']}")
+        for e in reversed(events[-30:]):
+            st.text(f"{BAND_STYLE[e['band']][0]} {e['score']:.0%}  {e['text'][:160]}")
+
+    live_panel()
 
 with st.expander("¿Qué tan fiable es? (léelo antes de fiarte)"):
     st.markdown(

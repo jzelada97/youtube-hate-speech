@@ -1,0 +1,38 @@
+services:
+  api:
+    build: .
+    image: hatedet:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"   # solo local: expone al exterior con un proxy inverso HTTPS (ver deploy/Caddyfile)
+    volumes:
+      - ./models:/app/models:ro
+    environment:
+      HATEDET_MODEL_PATH: ${HATEDET_MODEL_PATH:-models/ensemble_v1.joblib}
+      HATEDET_API_KEY: ${HATEDET_API_KEY:-}
+      HATEDET_CORS_REGEX: ${HATEDET_CORS_REGEX:-^(chrome-extension://.*|https?://(localhost|127\.0\.0\.1)(:\d+)?)$$}
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
+      HATEDET_MAX_MONITORS: ${HATEDET_MAX_MONITORS:-5}
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+  ui:
+    image: hatedet:latest
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8501:8501"
+    environment:
+      HATEDET_API_URL: http://api:8000
+    command: ["streamlit", "run", "src/hatedet/ui/app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.headless=true"]
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /home/appuser/.streamlit
+    security_opt:
+      - no-new-privileges:true

@@ -35,22 +35,31 @@ def ensemble_params():
     return json.loads(PARAMS_PATH.read_text()) if PARAMS_PATH.exists() else None
 
 
+def build_lstm():
+    from hatedet.models.glove import glove_initializer
+    from hatedet.models.lstm import LSTMClassifier
+
+    return LSTMClassifier(cell="lstm", emb_dim=300, hidden=48, pretrained=glove_initializer, freeze_embeddings=True)
+
+
+# (version, fabrica, aumentacion). La red recurrente NO usa EDA: barajar o borrar palabras destruye el orden.
 MODELS = {
-    "baseline": ("baseline_v3", build_baseline_pipeline),
-    "ensemble": ("ensemble_v1", lambda: build_ensemble(ensemble_params())),
+    "baseline": ("baseline_v3", build_baseline_pipeline, AUGMENTATION),
+    "ensemble": ("ensemble_v1", lambda: build_ensemble(ensemble_params()), AUGMENTATION),
+    "lstm": ("lstm_glove_v1", build_lstm, {}),
 }
 
 
-def fit_with_augmentation(train: pd.DataFrame, seed: int, factory):
-    aug = augment_train(train, seed=seed, **AUGMENTATION)
+def fit_with_augmentation(train: pd.DataFrame, seed: int, factory, augmentation=AUGMENTATION):
+    aug = augment_train(train, seed=seed, **augmentation)
     return factory().fit(aug[TEXT_COLUMN], aug[TARGET_COLUMN].astype(int))
 
 
-def out_of_fold_scores(df: pd.DataFrame, factory) -> np.ndarray:
+def out_of_fold_scores(df: pd.DataFrame, factory, augmentation=AUGMENTATION) -> np.ndarray:
     y = df[TARGET_COLUMN].values.astype(int)
     oof = np.zeros(len(df))
     for fold, (tr, te) in enumerate(StratifiedKFold(5, shuffle=True, random_state=42).split(df, y)):
-        model = fit_with_augmentation(df.iloc[tr], seed=fold, factory=factory)
+        model = fit_with_augmentation(df.iloc[tr], seed=fold, factory=factory, augmentation=augmentation)
         oof[te] = model.predict_proba(df.iloc[te][TEXT_COLUMN])[:, 1]
     return oof
 
@@ -59,7 +68,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", choices=MODELS, default="ensemble")
     parser_kind = parser.parse_args().model
-    version, factory = MODELS[parser_kind]
+    version, factory, augmentation = MODELS[parser_kind]
     model_path = MODELS_DIR / f"{version}.joblib"
     metadata_path = MODELS_DIR / f"{version}.metadata.json"
     print(f"Entrenando {version}")
@@ -68,7 +77,7 @@ def main():
     dev = pd.concat([train, val], ignore_index=True)
     print(f"Desarrollo (train+val): {len(dev)} | Test (intacto): {len(test)}")
 
-    oof = out_of_fold_scores(dev, factory)
+    oof = out_of_fold_scores(dev, factory, augmentation)
     y_dev = dev[TARGET_COLUMN].values.astype(int)
     cv_report = evaluate(y_dev, (oof >= 0.5).astype(int), oof)
     thresholds = choose_thresholds(y_dev, oof)
@@ -76,7 +85,7 @@ def main():
     print(cv_report)
     print(f"\nUmbrales de bandas: {thresholds}")
 
-    model = fit_with_augmentation(dev, seed=42, factory=factory)
+    model = fit_with_augmentation(dev, seed=42, factory=factory, augmentation=augmentation)
     reports = {}
     for name, split in [("dev (train+val, en muestra)", dev), ("test", test)]:
         scores = model.predict_proba(split[TEXT_COLUMN])[:, 1]
@@ -95,7 +104,7 @@ def main():
         "model_version": version,
         "model_kind": parser_kind,
         "target_column": TARGET_COLUMN,
-        "augmentation": AUGMENTATION,
+        "augmentation": augmentation,
         "n_dev": len(dev),
         "n_test": len(test),
         "thresholds": thresholds,

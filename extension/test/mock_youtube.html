@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Página de prueba de la extensión (simula los comentarios de YouTube)</title>
+  <link rel="stylesheet" href="../content.css">
+  <style>
+    body { font: 14px/1.5 sans-serif; max-width: 640px; margin: 20px auto; }
+    ytd-comment-thread-renderer { display: block; padding: 8px 0; border-bottom: 1px solid #ddd; }
+    button { margin: 0 6px 8px 0; }
+  </style>
+  <script>
+    window.__settings = {};
+    window.chrome = {
+      runtime: {
+        id: "test",
+        sendMessage: async (msg) => {
+          const res = await fetch("http://localhost:8000/predict/batch", {
+            method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texts: msg.texts }),
+          });
+          if (!res.ok) return { error: "API " + res.status };
+          const data = await res.json();
+          return { predictions: data.predictions.map((p) => ({ score: p.score, band: p.band })) };
+        },
+      },
+      storage: {
+        sync: { get: async (d) => ({ ...d, ...window.__settings }) },
+        onChanged: { addListener: (fn) => { window.__onChanged = fn; } },
+        local: { set: async (v) => { window.__stats = v; } },
+      },
+    };
+    window.__setMode = (mode) => { window.__settings.mode = mode; window.__onChanged({ mode: { newValue: mode } }); };
+    window.__addComments = (texts) => {
+      const box = document.getElementById("comments");
+      texts.forEach((t) => {
+        const thread = document.createElement("ytd-comment-thread-renderer");
+        const str = document.createElement("yt-formatted-string");
+        str.id = "content-text";
+        str.textContent = t;
+        thread.appendChild(str);
+        box.appendChild(thread);
+      });
+    };
+  </script>
+</head>
+<body>
+  <h3>Comentarios simulados</h3>
+  <div>
+    <button onclick="__setMode('label')">Modo etiqueta</button>
+    <button onclick="__setMode('blur')">Modo difuminar</button>
+    <button onclick="__setMode('hide')">Modo ocultar</button>
+    <button onclick="__addComments(['Thanks for the lovely video', 'These blacks are all criminals and animals <b>x</b>'])">Cargar más</button>
+  </div>
+  <div id="comments"></div>
+  <script>
+    __addComments([
+      "What a lovely video, thanks for sharing",
+      "All these blacks are criminals and animals",
+      "Some Muslims are doctors and teachers in my town",
+      "I love this song so much",
+    ]);
+  </script>
+  <script src="../content.js"></script>
+</body>
+</html>
