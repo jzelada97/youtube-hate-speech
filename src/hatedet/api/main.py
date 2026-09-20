@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from hatedet.models.bands import band_for
 from hatedet.youtube.analysis import VideoReport, analyze
+from hatedet.youtube.monitor import MonitorRegistry, RegistryFull
 from hatedet.youtube.sources import CommentSource, SourceError, default_source
 from hatedet.youtube.urls import parse_video_id
 
@@ -68,6 +69,11 @@ class BatchResponse(BaseModel):
     predictions: list[Prediction]
 
 
+class MonitorStart(BaseModel):
+    url: str = Field(min_length=11, max_length=300)
+    poll_seconds: int = Field(default=30, ge=10, le=300)
+
+
 class VideoRequest(BaseModel):
     url: str = Field(min_length=11, max_length=300, description="URL (o id) de un video de YouTube")
     max_comments: int = Field(default=100, ge=1, le=MAX_VIDEO_COMMENTS)
@@ -95,6 +101,7 @@ def _load_artifacts(model_path: str):
 
 def create_app(
     pipeline=None, metadata: dict | None = None, comment_source: CommentSource | None = None,
+    monitor_autostart: bool = True,
 ) -> FastAPI:
     """Fabrica la app. `pipeline`/`metadata`/`comment_source` permiten inyectar dependencias (tests)."""
 
@@ -111,7 +118,12 @@ def create_app(
         app.state.t_high = float(os.getenv("HATEDET_T_HIGH", thr.get("t_high", 0.9)))
         app.state.version = app.state.metadata.get("model_version", "unknown")
         app.state.pipeline.predict_proba(["warm up"])  # evita ~2 s de arranque en frio en la 1a peticion
+        app.state.monitors = MonitorRegistry(
+            app.state.pipeline, app.state.t_low, app.state.t_high,
+            max_sessions=int(os.getenv("HATEDET_MAX_MONITORS", "5")), autostart=monitor_autostart,
+        )
         yield
+        app.state.monitors.stop_all()
 
     app = FastAPI(title="Detector de odio en comentarios de YouTube", version="0.1.0", lifespan=lifespan)
     app.add_middleware(
@@ -164,6 +176,33 @@ def create_app(
             raise HTTPException(status_code=502, detail=f"No se pudieron obtener los comentarios: {e}")
         st = request.app.state
         return analyze(comments, st.pipeline, st.t_low, st.t_high, video_id=video_id, model_version=st.version)
+
+    @app.post("/monitor/start", dependencies=[Depends(check_key)])
+    def monitor_start(body: MonitorStart, request: Request):
+        try:
+            video_id = parse_video_id(body.url)
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=str(e))
+        try:
+            sid = request.app.state.monitors.start(video_id, comment_source or default_source(), body.poll_seconds)
+        except RegistryFull as e:
+            raise HTTPException(status_code=429, detail=str(e))
+        return {"session_id": sid, "video_id": video_id, "poll_seconds": body.poll_seconds}
+
+    @app.get("/monitor/{session_id}/events", dependencies=[Depends(check_key)])
+    def monitor_events(session_id: str, request: Request, after: int = 0):
+        monitor = request.app.state.monitors.get(session_id)
+        if monitor is None:
+            raise HTTPException(status_code=404, detail="Sesion desconocida o caducada")
+        events, cursor = monitor.events_after(max(0, after))
+        return {"events": events, "next": cursor, "active": monitor.active,
+                "expires_in": monitor.expires_in, "error": monitor.last_error}
+
+    @app.delete("/monitor/{session_id}", dependencies=[Depends(check_key)])
+    def monitor_stop(session_id: str, request: Request):
+        if not request.app.state.monitors.stop(session_id):
+            raise HTTPException(status_code=404, detail="Sesion desconocida o caducada")
+        return {"stopped": True}
 
     return app
 
