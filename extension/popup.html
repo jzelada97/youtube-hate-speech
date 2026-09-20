@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="popup.css">
+  <title>Detector de odio</title>
+</head>
+<body>
+  <h1>Detector de odio</h1>
+  <p class="muted">Marca comentarios de YouTube según un modelo de aprendizaje automático. <b>Es una estimación y puede equivocarse.</b></p>
+
+  <label class="row"><input type="checkbox" id="enabled"> Activado</label>
+
+  <label>URL de la API
+    <input type="url" id="apiUrl" placeholder="https://mi-servidor.example.com" autocomplete="off">
+  </label>
+  <label>Clave de API (opcional)
+    <input type="password" id="apiKey" autocomplete="off">
+  </label>
+  <label>Qué hacer con los marcados
+    <select id="mode">
+      <option value="label">Solo mostrar una etiqueta</option>
+      <option value="blur">Difuminar (clic en la etiqueta para ver)</option>
+      <option value="hide">Ocultar «posible odio» y difuminar «revisar»</option>
+    </select>
+  </label>
+  <label class="row"><input type="checkbox" id="showAll"> Mostrar también la etiqueta «OK»</label>
+
+  <div class="buttons">
+    <button id="save">Guardar</button>
+    <button id="test" class="secondary">Probar conexión</button>
+  </div>
+  <p id="status" role="status"></p>
+  <p id="stats" class="muted"></p>
+  <p class="muted small">Privacidad: el texto de los comentarios visibles se envía a la API que configures. Usa tu propio servidor y HTTPS.</p>
+  <script src="popup.js"></script>
+</body>
+</html>

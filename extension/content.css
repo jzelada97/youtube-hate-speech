@@ -1,0 +1,15 @@
+.hatedet-badge {
+  display: inline-block;
+  margin: 4px 0 0 0;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font: 500 11px/1.5 Roboto, Arial, sans-serif;
+  color: #1a1a19;
+  cursor: default;
+}
+.hatedet-permitir { background: #d9ecd0; }
+.hatedet-revisar { background: #fbe3b0; }
+.hatedet-ocultar { background: #f6c1c1; }
+.hatedet-clickable { cursor: pointer; text-decoration: underline; }
+.hatedet-blur { filter: blur(6px); user-select: none; }
+.hatedet-collapsed { display: none !important; }
