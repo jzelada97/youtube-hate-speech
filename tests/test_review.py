@@ -6,6 +6,12 @@ from hatedet.api.main import create_app
 from hatedet.db.store import PENDING, RESOLVED, ReviewStore, local_id
 
 
+@pytest.fixture(autouse=True)
+def _no_ambient_queue(monkeypatch):
+    """La cola se inyecta en cada test; si el entorno tuviera HATEDET_REVIEW_DB usaria la base real."""
+    monkeypatch.delenv("HATEDET_REVIEW_DB", raising=False)
+
+
 @pytest.fixture
 def store(tmp_path):
     return ReviewStore(tmp_path / "review.db")
@@ -16,11 +22,27 @@ def _items(n=3):
             for i in range(n)]
 
 
+def test_a_bad_path_fails_loudly_instead_of_pretending_to_store(tmp_path):
+    blocker = tmp_path / "soy_un_fichero"
+    blocker.write_text("no soy un directorio")
+    with pytest.raises(RuntimeError, match="HATEDET_REVIEW_DB"):
+        ReviewStore(blocker / "review.db")
+
+
 def test_enqueue_returns_how_many_were_added_and_ignores_repeats(store):
     assert store.enqueue(_items(3), "v1") == 3
     assert store.enqueue(_items(3), "v1") == 0
     assert store.enqueue([{"text": "otro", "score": 0.7, "band": "revisar", "comment_id": "nuevo"}], "v1") == 1
     assert store.stats()["total"] == 4
+
+
+def test_enqueue_count_matches_reality_for_one_item_and_for_mixed_batches(store):
+    """El conteo se llevo un fallo en Docker: cuenta las filas insertadas de verdad, no las enviadas."""
+    assert store.enqueue(_items(1), "v1") == 1
+    assert store.stats()["total"] == 1
+    mixed = _items(3)  # c0 ya esta; c1 y c2 son nuevos
+    assert store.enqueue(mixed, "v1") == 2
+    assert store.stats()["total"] == 3
 
 
 def test_text_without_comment_id_gets_a_stable_id(store):

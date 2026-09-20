@@ -89,10 +89,19 @@ class ReviewStore:
 
     def __init__(self, path: str | Path):
         self.path = Path(path)
-        if self.path.parent != Path(""):
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-        with self._connect() as con:
-            con.executescript(SCHEMA)
+        try:
+            if self.path.parent != Path(""):
+                self.path.parent.mkdir(parents=True, exist_ok=True)
+            with self._connect() as con:
+                con.executescript(SCHEMA)
+        except (OSError, sqlite3.Error) as e:
+            # Arrancar con la cola mal configurada y hacer como si nada seria peor: creerias que
+            # estas guardando los veredictos y no. Se falla, pero diciendo que pasa y donde.
+            raise RuntimeError(
+                f"No se pudo abrir la cola de revision en '{self.path}': {e}. "
+                "Revisa HATEDET_REVIEW_DB: debe apuntar a una ruta escribible "
+                "(en Docker, dentro del volumen: /app/review/review.db)."
+            ) from e
 
     def _connect(self) -> sqlite3.Connection:
         con = sqlite3.connect(self.path, timeout=10)
@@ -112,14 +121,18 @@ class ReviewStore:
         if not rows:
             return 0
         with self._connect() as con:
-            before = con.execute("SELECT COUNT(*) FROM reviews").fetchone()[0]
+            # total_changes cuenta las filas realmente insertadas: las que OR IGNORE descarta no suman.
+            # Contar con dos SELECT COUNT(*) alrededor del INSERT parecia equivalente y no lo es: dentro
+            # de la misma transaccion el resultado depende de la version de SQLite (en el contenedor
+            # Debian devolvia 0 aunque la fila se insertaba).
+            before = con.total_changes
             con.executemany(
                 "INSERT OR IGNORE INTO reviews "
                 "(comment_id, video_id, text, score, band, model_version, created_at) "
                 "VALUES (?, ?, ?, ?, ?, ?, ?)",
                 rows,
             )
-            return con.execute("SELECT COUNT(*) FROM reviews").fetchone()[0] - before
+            return con.total_changes - before
 
     def pending(self, limit: int = 20) -> list[ReviewItem]:
         """Pendientes, los mas sospechosos primero (es donde el moderador aporta mas)."""

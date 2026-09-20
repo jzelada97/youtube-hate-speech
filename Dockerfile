@@ -15,8 +15,11 @@ RUN pip install ".[serve]" \
     && python -m nltk.downloader -d /usr/share/nltk_data stopwords wordnet omw-1.4 \
     && python -m spacy download en_core_web_sm
 
+# /app/review existe y pertenece a appuser para que el volumen con nombre herede ese propietario:
+# el contenedor corre como no root y el sistema de ficheros es de solo lectura, asi que es el unico
+# sitio escribible (cola de revision, apagada salvo que se defina HATEDET_REVIEW_DB).
 RUN useradd --create-home --uid 10001 appuser \
-    && mkdir -p /app/models /app/conf \
+    && mkdir -p /app/models /app/conf /app/review \
     && chown -R appuser /app
 USER appuser
 

@@ -7,12 +7,15 @@ services:
       - "127.0.0.1:8000:8000"   # solo local: expone al exterior con un proxy inverso HTTPS (ver deploy/Caddyfile)
     volumes:
       - ./models:/app/models:ro
+      - review-data:/app/review   # unico punto escribible: cola de revision (ver HATEDET_REVIEW_DB)
     environment:
       HATEDET_MODEL_PATH: ${HATEDET_MODEL_PATH:-models/ensemble_v1.joblib}
       HATEDET_API_KEY: ${HATEDET_API_KEY:-}
       HATEDET_CORS_REGEX: ${HATEDET_CORS_REGEX:-^(chrome-extension://.*|https?://(localhost|127\.0\.0\.1)(:\d+)?)$$}
       YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
       HATEDET_MAX_MONITORS: ${HATEDET_MAX_MONITORS:-5}
+      # Vacio = cola de revision apagada. Para activarla: HATEDET_REVIEW_DB=/app/review/review.db
+      HATEDET_REVIEW_DB: ${HATEDET_REVIEW_DB:-}
     read_only: true
     tmpfs:
       - /tmp
@@ -36,3 +39,6 @@ services:
       - /home/appuser/.streamlit
     security_opt:
       - no-new-privileges:true
+
+volumes:
+  review-data:   # persiste la cola de revision entre reinicios; contiene texto de comentarios (RGPD)

@@ -8,6 +8,10 @@ borra ni denuncia nada.
 
 ## Instalación (modo desarrollador)
 
+**No hace falta ninguna cuenta**: ni de Google, ni de YouTube, ni de desarrollador. Tampoco clave de la YouTube
+Data API: la extensión lee los comentarios que ya estás viendo en la página. Lo único imprescindible es tener la
+API del proyecto en marcha y accesible desde el navegador.
+
 1. Arranca la API (`uvicorn hatedet.api.main:app --port 8000`, o `docker compose up`).
 2. En Chrome/Edge abre `chrome://extensions`, activa **Modo desarrollador** y pulsa **Cargar descomprimida**
    seleccionando esta carpeta (`extension/`).
