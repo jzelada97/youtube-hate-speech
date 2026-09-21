@@ -1,0 +1,315 @@
+{
+  "descripcion": "Referencia congelada ANTES de probar ningun transformer. Cualquier resultado con BERT se compara contra estas cifras, medidas con el mismo protocolo (CV estratificada repetida pareada, 10 particiones).",
+  "congelado_el": "2026-09-21T07:00:48+00:00",
+  "commit": "30361b50b9158283cea09bdb2ddc93608b015085",
+  "modelos_servidos_o_entrenados": {
+    "ensemble_v1": {
+      "f1_macro_cv": 0.7080809516520522,
+      "f1_hate_cv": 0.5179856115107914,
+      "pr_auc_cv": 0.4084089199520261,
+      "f1_macro_test": 0.7519489723600283,
+      "f1_hate_test": 0.5882352941176471,
+      "pr_auc_test": 0.516612228866289,
+      "generalization_gap_pp_in_sample_vs_cv": 4.599172757352554,
+      "generalization_gap_pp_in_sample_vs_test": 0.2123706865549413,
+      "meets_gap_requirement": true,
+      "thresholds": {
+        "t_low": 0.4653,
+        "t_high": 0.6849,
+        "recall_at_t_low": 0.7,
+        "precision_at_t_low": 0.405,
+        "flagged_fraction_at_t_low": 0.238,
+        "precision_at_t_high": 0.5,
+        "recall_at_t_high": 0.136,
+        "flagged_fraction_at_t_high": 0.038
+      },
+      "n_dev": 797,
+      "n_test": 200
+    },
+    "baseline_v3": {
+      "f1_macro_cv": 0.7010149714186776,
+      "f1_hate_cv": 0.5119453924914675,
+      "pr_auc_cv": 0.39220973640258855,
+      "f1_macro_test": 0.774891774891775,
+      "f1_hate_test": 0.6285714285714286,
+      "pr_auc_test": 0.5802201055931563,
+      "generalization_gap_pp_in_sample_vs_cv": 3.2067184520621184,
+      "generalization_gap_pp_in_sample_vs_test": -4.180961895247615,
+      "meets_gap_requirement": true,
+      "thresholds": {
+        "t_low": 0.4902,
+        "t_high": 0.8807,
+        "recall_at_t_low": 0.7,
+        "precision_at_t_low": 0.412,
+        "flagged_fraction_at_t_low": 0.235,
+        "precision_at_t_high": 0.5,
+        "recall_at_t_high": 0.118,
+        "flagged_fraction_at_t_high": 0.033
+      },
+      "n_dev": 797,
+      "n_test": 200
+    },
+    "lstm_glove_v1": {
+      "f1_macro_cv": 0.6730926989335522,
+      "f1_hate_cv": 0.4782608695652174,
+      "pr_auc_cv": 0.37553968542997684,
+      "f1_macro_test": 0.7292562509953815,
+      "f1_hate_test": 0.5641025641025641,
+      "pr_auc_test": 0.6072197655097554,
+      "generalization_gap_pp_in_sample_vs_cv": 4.524428936198721,
+      "generalization_gap_pp_in_sample_vs_test": -1.0919262699842114,
+      "meets_gap_requirement": true,
+      "thresholds": {
+        "t_low": 0.5006,
+        "t_high": 0.8588,
+        "recall_at_t_low": 0.7,
+        "precision_at_t_low": 0.363,
+        "flagged_fraction_at_t_low": 0.266,
+        "precision_at_t_high": 0.5,
+        "recall_at_t_high": 0.136,
+        "flagged_fraction_at_t_high": 0.038
+      },
+      "n_dev": 797,
+      "n_test": 200
+    }
+  },
+  "cv_pareada_10_particiones": {
+    "baseline (lr_word + EDA)": {
+      "f1_macro_best_thr": {
+        "media": 0.7404,
+        "por_particion": [
+          0.7068,
+          0.7264,
+          0.7707,
+          0.7631,
+          0.7568,
+          0.7188,
+          0.7235,
+          0.7702,
+          0.734,
+          0.734
+        ]
+      },
+      "pr_auc": {
+        "media": 0.4586,
+        "por_particion": [
+          0.3572,
+          0.4584,
+          0.566,
+          0.5545,
+          0.4447,
+          0.4955,
+          0.389,
+          0.4152,
+          0.4976,
+          0.408
+        ]
+      },
+      "precision_at_recall70": {
+        "media": 0.4615,
+        "por_particion": [
+          0.4082,
+          0.4118,
+          0.5429,
+          0.4634,
+          0.4889,
+          0.4231,
+          0.4444,
+          0.5263,
+          0.4634,
+          0.4423
+        ]
+      }
+    },
+    "ensemble (votacion + EDA)": {
+      "f1_macro_best_thr": {
+        "media": 0.7415,
+        "por_particion": [
+          0.7076,
+          0.7457,
+          0.785,
+          0.7631,
+          0.7344,
+          0.7056,
+          0.7268,
+          0.7676,
+          0.7578,
+          0.7218
+        ]
+      },
+      "pr_auc": {
+        "media": 0.4907,
+        "por_particion": [
+          0.3778,
+          0.5085,
+          0.5936,
+          0.5702,
+          0.4694,
+          0.4195,
+          0.504,
+          0.5251,
+          0.5066,
+          0.4323
+        ]
+      },
+      "precision_at_recall70": {
+        "media": 0.4455,
+        "por_particion": [
+          0.4167,
+          0.4082,
+          0.5588,
+          0.5,
+          0.4565,
+          0.3846,
+          0.4348,
+          0.5135,
+          0.3585,
+          0.4231
+        ]
+      }
+    },
+    "BiLSTM desde cero": {
+      "f1_macro_best_thr": {
+        "media": 0.7085,
+        "por_particion": [
+          0.6846,
+          0.7128,
+          0.7369,
+          0.7255,
+          0.6897,
+          0.6615,
+          0.6863,
+          0.744,
+          0.7325,
+          0.7107
+        ]
+      },
+      "pr_auc": {
+        "media": 0.392,
+        "por_particion": [
+          0.3207,
+          0.4285,
+          0.4432,
+          0.5383,
+          0.3508,
+          0.3239,
+          0.3389,
+          0.4222,
+          0.367,
+          0.3866
+        ]
+      },
+      "precision_at_recall70": {
+        "media": 0.3176,
+        "por_particion": [
+          0.2597,
+          0.4255,
+          0.1939,
+          0.3958,
+          0.3636,
+          0.2041,
+          0.3175,
+          0.3519,
+          0.2794,
+          0.3846
+        ]
+      }
+    },
+    "BiLSTM + GloVe congelado": {
+      "f1_macro_best_thr": {
+        "media": 0.7173,
+        "por_particion": [
+          0.7298,
+          0.7185,
+          0.7643,
+          0.7325,
+          0.6888,
+          0.6656,
+          0.6684,
+          0.7279,
+          0.7325,
+          0.7445
+        ]
+      },
+      "pr_auc": {
+        "media": 0.4452,
+        "por_particion": [
+          0.493,
+          0.4219,
+          0.5246,
+          0.4959,
+          0.3655,
+          0.3817,
+          0.3387,
+          0.4434,
+          0.4299,
+          0.5569
+        ]
+      },
+      "precision_at_recall70": {
+        "media": 0.359,
+        "por_particion": [
+          0.3387,
+          0.4348,
+          0.3509,
+          0.3725,
+          0.3636,
+          0.2706,
+          0.3226,
+          0.4318,
+          0.2794,
+          0.4255
+        ]
+      }
+    },
+    "BiLSTM + GloVe afinado": {
+      "f1_macro_best_thr": {
+        "media": 0.7163,
+        "por_particion": [
+          0.686,
+          0.7185,
+          0.7467,
+          0.7376,
+          0.7056,
+          0.6734,
+          0.6914,
+          0.7574,
+          0.7298,
+          0.7162
+        ]
+      },
+      "pr_auc": {
+        "media": 0.4337,
+        "por_particion": [
+          0.3595,
+          0.4285,
+          0.5395,
+          0.5175,
+          0.47,
+          0.3254,
+          0.3798,
+          0.4334,
+          0.4328,
+          0.4511
+        ]
+      },
+      "precision_at_recall70": {
+        "media": 0.3366,
+        "por_particion": [
+          0.2759,
+          0.4286,
+          0.2754,
+          0.3725,
+          0.3125,
+          0.1908,
+          0.3509,
+          0.4222,
+          0.3115,
+          0.4255
+        ]
+      }
+    }
+  },
+  "requisito_cliente": "gap entrenamiento-validacion < 5 pp",
+  "nota": "El F1 de test (n=28 positivos, IC95% ~ +-0.08) NO es una cifra de rendimiento. La estimacion fiable es la de validacion cruzada."
+}
