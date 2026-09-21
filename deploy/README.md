@@ -36,7 +36,9 @@ docker compose ps            # api debe aparecer "healthy"
 curl -s http://127.0.0.1:8000/health
 ```
 
-La API y la demo escuchan solo en `127.0.0.1` (ver `docker-compose.yml`).
+La API y la demo escuchan solo en `127.0.0.1` (ver `docker-compose.yml`). **Si el 8000 o el 8501 ya los usa otro servicio de la
+máquina**, cambia `HATEDET_API_PORT` / `HATEDET_UI_PORT` en `.env` (p. ej. `8010`) antes de arrancar, y usa ese puerto en
+los `curl` y en el `Caddyfile`. Comprueba antes qué está ocupado: `ss -ltn | grep -E ':8000|:8501'`.
 
 ## 5. HTTPS con Caddy
 

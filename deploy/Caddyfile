@@ -1,4 +1,5 @@
 # Sustituye hate.tudominio.com por tu dominio. Caddy gestiona el certificado HTTPS automaticamente.
+# Los puertos 8000 (API) y 8501 (demo) deben coincidir con HATEDET_API_PORT / HATEDET_UI_PORT de tu .env.
 hate.tudominio.com {
 	encode gzip
 

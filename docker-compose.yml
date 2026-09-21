@@ -4,7 +4,9 @@ services:
     image: hatedet:latest
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8000:8000"   # solo local: expone al exterior con un proxy inverso HTTPS (ver deploy/Caddyfile)
+      # Solo local: expone al exterior con un proxy inverso HTTPS (ver deploy/Caddyfile). El puerto del HOST se
+      # cambia con HATEDET_API_PORT si el 8000 ya esta ocupado; dentro del contenedor sigue siendo el 8000.
+      - "127.0.0.1:${HATEDET_API_PORT:-8000}:8000"
     volumes:
       - ./models:/app/models:ro
       - review-data:/app/review   # unico punto escribible: cola de revision (ver HATEDET_REVIEW_DB)
@@ -29,7 +31,7 @@ services:
       api:
         condition: service_healthy
     ports:
-      - "127.0.0.1:8501:8501"
+      - "127.0.0.1:${HATEDET_UI_PORT:-8501}:8501"   # idem: HATEDET_UI_PORT si el 8501 esta ocupado
     environment:
       HATEDET_API_URL: http://api:8000
     command: ["streamlit", "run", "src/hatedet/ui/app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.headless=true"]
