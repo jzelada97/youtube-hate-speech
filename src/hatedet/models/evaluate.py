@@ -47,6 +47,27 @@ def precision_at_fixed_recall(y_true, y_scores, target_recall: float = 0.90) -> 
     return float(precision[valid].max())
 
 
+def best_macro_f1(y_true, y_scores) -> float:
+    """Mejor F1-macro sobre todos los umbrales posibles: mide el ranking, sin depender de un corte concreto.
+
+    Es la misma definicion que usan las comparaciones de la CV pareada (scripts/eval_lstm.py), para que las cifras
+    sean comparables con la referencia congelada (reports/pre_bert_reference.json).
+    """
+    y = np.asarray(y_true).astype(bool)
+    scores = np.asarray(y_scores)
+    best = 0.0
+    for threshold in np.unique(scores):
+        pred = scores >= threshold
+        f1s = []
+        for cls in (True, False):
+            tp = np.sum((pred == cls) & (y == cls))
+            fp = np.sum((pred == cls) & (y != cls))
+            fn = np.sum((pred != cls) & (y == cls))
+            f1s.append(2 * tp / (2 * tp + fp + fn) if (2 * tp + fp + fn) else 0.0)
+        best = max(best, float(np.mean(f1s)))
+    return best
+
+
 def evaluate(y_true, y_pred, y_scores) -> ClassificationReport:
     return ClassificationReport(
         f1_macro=f1_score(y_true, y_pred, average="macro"),

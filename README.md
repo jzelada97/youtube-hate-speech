@@ -128,7 +128,8 @@ con la **misma CV pareada** que el resto (10 particiones; `python scripts/eval_l
 | Modelo | PR-AUC | F1-macro (mejor umbral) | Precisión al 70 % de recall |
 |---|---:|---:|---:|
 | Baseline (TF-IDF + regresión logística L1) | 0.459 | 0.740 | 0.461 |
-| Ensemble | 0.491 | 0.742 | 0.445 |
+| Ensemble, parámetros por defecto (no se sirve: 17 pp de gap) | 0.491 | 0.742 | 0.445 |
+| **Ensemble optimizado (el modelo servido)** | **0.472** | 0.746 | 0.445 |
 | BiLSTM desde cero | 0.392 | 0.708 | 0.318 |
 | BiLSTM + GloVe (embeddings preentrenados, congelados) | 0.445 | 0.717 | 0.359 |
 
@@ -136,6 +137,16 @@ Desde cero es **significativamente peor** que el baseline; con GloVe cierra casi
 estadísticamente igual) pero **no lo supera**. Conclusión: con ~800 comentarios de entrenamiento una red recurrente no
 mejora a ML clásico; el siguiente paso con más potencial es un transformer preentrenado (nivel Experto). El código
 sigue disponible (`python scripts/train.py --model lstm`, extra `pip install -e ".[nn]"`), pero no es el modelo servido.
+
+### Aumentación con BERT enmascarado: resultado (negativo)
+
+Se probó usar DistilBERT solo para *generar* variaciones de los comentarios de entrenamiento (rellena palabras
+tapadas según el contexto; el modelo no decide etiquetas), con los criterios de aceptación fijados antes de medir.
+Con la misma CV pareada, **ninguna variante mejora** a la aumentación clásica (EDA) que ya se usa: entre −0.2 y
+−2.9 pp de PR-AUC sobre el ensemble servido, y generar solo variantes de la clase de odio empeora de forma
+significativa. El generador queda disponible (`src/hatedet/data/mlm_augment.py`,
+`python scripts/eval_mlm_augmentation.py`, extra `[nn]`), pero el modelo servido no lo usa y **no incorpora ningún
+modelo preentrenado**.
 
 ## Docker
 

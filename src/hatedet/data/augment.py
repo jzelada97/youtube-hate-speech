@@ -80,16 +80,29 @@ def augment_train(
     eda_alpha: float = 0.1,
     eda_classes: str = "both",
     seed: int = 42,
+    mlm_variants: dict[str, list[str]] | None = None,
+    n_mlm_copies: int = 0,
+    mlm_classes: str = "both",
 ) -> pd.DataFrame:
     """Devuelve `train` + filas sinteticas (columnas `is_synthetic`, `kind`). Los originales no se tocan.
 
     n_eda_copies: copias EDA por comentario (una operacion por copia, en rotacion) de `eda_classes`
       ("both" o "hate"); la etiqueta de cada copia es la del original.
     n_hard_negatives: frases que mencionan un grupo sin ser odio (etiqueta False).
+    mlm_variants / n_mlm_copies / mlm_classes: variantes generadas con un modelo de lenguaje enmascarado
+      (data/mlm_augment.py, docs seccion 6.7), precalculadas como {texto original: [variantes]}. Se usan las
+      primeras `n_mlm_copies` de cada comentario de `mlm_classes` que este en `train`, con su misma etiqueta. Solo
+      pueden entrar variantes de comentarios de `train`: las de validacion no se consultan nunca.
     """
     rng = random.Random(seed)
     base = train[[TEXT_COLUMN, TARGET_COLUMN]].assign(is_synthetic=False, kind="real")
     rows = []
+    if n_mlm_copies and mlm_variants:
+        src = train if mlm_classes == "both" else train[train[TARGET_COLUMN].astype(bool)]
+        rows += [
+            {TEXT_COLUMN: variant, TARGET_COLUMN: bool(y), "is_synthetic": True, "kind": "mlm"}
+            for t, y in zip(src[TEXT_COLUMN], src[TARGET_COLUMN]) for variant in mlm_variants.get(t, [])[:n_mlm_copies]
+        ]
     if n_eda_copies:
         src = train if eda_classes == "both" else train[train[TARGET_COLUMN].astype(bool)]
         rows += [

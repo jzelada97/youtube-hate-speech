@@ -34,6 +34,7 @@ dev = [
 
 nn = [
     "torch>=2.2",
+    "transformers>=4.44",   # aumentacion con un modelo de lenguaje enmascarado (data/mlm_augment.py)
 ]
 
 hpo = [

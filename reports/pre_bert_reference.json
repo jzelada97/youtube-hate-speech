@@ -121,53 +121,6 @@
         ]
       }
     },
-    "ensemble (votacion + EDA)": {
-      "f1_macro_best_thr": {
-        "media": 0.7415,
-        "por_particion": [
-          0.7076,
-          0.7457,
-          0.785,
-          0.7631,
-          0.7344,
-          0.7056,
-          0.7268,
-          0.7676,
-          0.7578,
-          0.7218
-        ]
-      },
-      "pr_auc": {
-        "media": 0.4907,
-        "por_particion": [
-          0.3778,
-          0.5085,
-          0.5936,
-          0.5702,
-          0.4694,
-          0.4195,
-          0.504,
-          0.5251,
-          0.5066,
-          0.4323
-        ]
-      },
-      "precision_at_recall70": {
-        "media": 0.4455,
-        "por_particion": [
-          0.4167,
-          0.4082,
-          0.5588,
-          0.5,
-          0.4565,
-          0.3846,
-          0.4348,
-          0.5135,
-          0.3585,
-          0.4231
-        ]
-      }
-    },
     "BiLSTM desde cero": {
       "f1_macro_best_thr": {
         "media": 0.7085,
@@ -308,8 +261,107 @@
           0.4255
         ]
       }
+    },
+    "ensemble por defecto (votacion + EDA) [antes etiquetado como 'ensemble']": {
+      "f1_macro_best_thr": {
+        "media": 0.7415,
+        "por_particion": [
+          0.7076,
+          0.7457,
+          0.785,
+          0.7631,
+          0.7344,
+          0.7056,
+          0.7268,
+          0.7676,
+          0.7578,
+          0.7218
+        ]
+      },
+      "pr_auc": {
+        "media": 0.4907,
+        "por_particion": [
+          0.3778,
+          0.5085,
+          0.5936,
+          0.5702,
+          0.4694,
+          0.4195,
+          0.504,
+          0.5251,
+          0.5066,
+          0.4323
+        ]
+      },
+      "precision_at_recall70": {
+        "media": 0.4455,
+        "por_particion": [
+          0.4167,
+          0.4082,
+          0.5588,
+          0.5,
+          0.4565,
+          0.3846,
+          0.4348,
+          0.5135,
+          0.3585,
+          0.4231
+        ]
+      }
+    },
+    "ensemble servido (params optimizados) + EDA": {
+      "f1_macro_best_thr": {
+        "media": 0.7457,
+        "por_particion": [
+          0.7181,
+          0.7576,
+          0.785,
+          0.7556,
+          0.7573,
+          0.708,
+          0.7068,
+          0.7757,
+          0.7645,
+          0.7287
+        ]
+      },
+      "pr_auc": {
+        "media": 0.4716,
+        "por_particion": [
+          0.3876,
+          0.4872,
+          0.6233,
+          0.5512,
+          0.3889,
+          0.4444,
+          0.4509,
+          0.4618,
+          0.5155,
+          0.4054
+        ]
+      },
+      "precision_at_recall70": {
+        "media": 0.445,
+        "por_particion": [
+          0.4348,
+          0.42,
+          0.5429,
+          0.4524,
+          0.5,
+          0.3621,
+          0.3818,
+          0.5263,
+          0.3958,
+          0.434
+        ]
+      }
     }
   },
   "requisito_cliente": "gap entrenamiento-validacion < 5 pp",
-  "nota": "El F1 de test (n=28 positivos, IC95% ~ +-0.08) NO es una cifra de rendimiento. La estimacion fiable es la de validacion cruzada."
+  "nota": "El F1 de test (n=28 positivos, IC95% ~ +-0.08) NO es una cifra de rendimiento. La estimacion fiable es la de validacion cruzada.",
+  "correccion": {
+    "fecha": "2026-09-21T07:24:04+00:00",
+    "que": "La fila 'ensemble (votacion + EDA)' era build_ensemble() con parametros por defecto (17.3 pp de gap, no cumple el requisito), no el ensemble servido. Se anade el servido (build_ensemble(conf/ensemble_params.json)) medido con las mismas 10 particiones y solo con EDA, antes de cualquier resultado de BERT.",
+    "fuente": "reports/mlm_augmentation_comparison.json"
+  }
 }
