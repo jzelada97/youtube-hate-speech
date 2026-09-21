@@ -42,7 +42,14 @@ los `curl` y en el `Caddyfile`. Comprueba antes qué está ocupado: `ss -ltn | g
 
 ## 5. HTTPS con Caddy
 
-Edita `deploy/Caddyfile` (cambia `hate.tudominio.com` por tu dominio) y:
+> **Si la máquina ya tiene Caddy sirviendo otros sitios, NO copies este fichero encima de `/etc/caddy/Caddyfile`**:
+> lo sobrescribirías y se caería lo que ya sirve. Añade el bloque de `deploy/Caddyfile` **dentro del Caddyfile
+> existente** (o guárdalo aparte e impórtalo con `import /etc/caddy/conf.d/*.caddy`), valida con
+> `caddy validate --config /etc/caddy/Caddyfile` y recarga con `sudo systemctl reload caddy`, que no corta las
+> conexiones. Si tu Caddy corre **dentro de un contenedor**, `127.0.0.1` es el propio contenedor y no llegará a
+> nuestros puertos: usa la IP del host o pon ambos en la misma red de Docker.
+
+Para una VM vacía: edita `deploy/Caddyfile` (cambia `hate.tudominio.com` por tu dominio) y:
 
 ```bash
 sudo cp deploy/Caddyfile /etc/caddy/Caddyfile
