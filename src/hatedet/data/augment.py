@@ -15,6 +15,7 @@ import pandas as pd
 
 from hatedet.data.easy_augment import OPERATIONS, easy_augment
 from hatedet.data.schema import TARGET_COLUMN, TEXT_COLUMN
+from hatedet.data.toxic_synonyms import toxic_variants
 
 _GROUP_FORMS = [
     ("Black people", "Black"), ("white people", "white"), ("Muslims", "Muslim"),
@@ -83,6 +84,8 @@ def augment_train(
     mlm_variants: dict[str, list[str]] | None = None,
     n_mlm_copies: int = 0,
     mlm_classes: str = "both",
+    n_toxsyn_copies: int = 0,
+    toxsyn_classes: str = "both",
 ) -> pd.DataFrame:
     """Devuelve `train` + filas sinteticas (columnas `is_synthetic`, `kind`). Los originales no se tocan.
 
@@ -93,10 +96,22 @@ def augment_train(
       (data/mlm_augment.py, docs seccion 6.7), precalculadas como {texto original: [variantes]}. Se usan las
       primeras `n_mlm_copies` de cada comentario de `mlm_classes` que este en `train`, con su misma etiqueta. Solo
       pueden entrar variantes de comentarios de `train`: las de validacion no se consultan nunca.
+    n_toxsyn_copies / toxsyn_classes: hasta `n_toxsyn_copies` variantes por comentario cambiando terminos toxicos por
+      equivalentes (data/toxic_synonyms.py, docs seccion 6.9); toxico -> toxico, con la etiqueta del original. Solo
+      genera para los comentarios que contienen algun termino del lexico. Usa su propia semilla: activarlo o no no
+      altera el aleatorio de EDA.
     """
     rng = random.Random(seed)
     base = train[[TEXT_COLUMN, TARGET_COLUMN]].assign(is_synthetic=False, kind="real")
     rows = []
+    if n_toxsyn_copies:
+        tox_rng = random.Random(f"{seed}-toxsyn")
+        src = train if toxsyn_classes == "both" else train[train[TARGET_COLUMN].astype(bool)]
+        rows += [
+            {TEXT_COLUMN: variant, TARGET_COLUMN: bool(y), "is_synthetic": True, "kind": "sinonimo_toxico"}
+            for t, y in zip(src[TEXT_COLUMN], src[TARGET_COLUMN])
+            for variant in toxic_variants(t, n_toxsyn_copies, tox_rng)
+        ]
     if n_mlm_copies and mlm_variants:
         src = train if mlm_classes == "both" else train[train[TARGET_COLUMN].astype(bool)]
         rows += [

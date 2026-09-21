@@ -148,6 +148,15 @@ significativa. El generador queda disponible (`src/hatedet/data/mlm_augment.py`,
 `python scripts/eval_mlm_augmentation.py`, extra `[nn]`), pero el modelo servido no lo usa y **no incorpora ningún
 modelo preentrenado**.
 
+### Aumentación con sinónimos tóxicos: resultado (negativo, empeora)
+
+Se probó cambiar un término tóxico por otro equivalente (`idiot` ↔ `moron`, `thugs` ↔ `punks`), que conserva la
+etiqueta por construcción. Con la misma CV pareada y criterios fijados antes de medir, **todas las variantes empeoran**
+a EDA (−1 a −6 pp de PR-AUC), incluso frente a no aumentar nada, y cuantas más copias, peor. Con WordNet, el volteo de
+etiquetas y BERT enmascarado son cuatro familias de aumentación léxica sin mejora: el límite es la variedad de los
+datos, no su cantidad. El generador queda en `src/hatedet/data/toxic_synonyms.py` y
+`python scripts/eval_toxic_synonyms.py`, pero el modelo servido no lo usa.
+
 ## Docker
 
 ```bash
