@@ -8,7 +8,8 @@ conoce los insultos que dominan este corpus (ver docs/DECISIONES.md, secciones 6
 Objetivo: con ~140 positivos el modelo asocia el odio a palabras concretas ("thugs") y falla ante equivalentes
 ("hoodlums"). Intercambiar terminos equivalentes reparte ese peso entre ellos.
 
-Solo palabras y frases fijas cortas: la parafrasis de frases enteras exige un modelo de lenguaje (seccion 6.8).
+Solo palabras y frases fijas cortas: reescribir frases enteras exige un modelo generativo (traduccion automatica,
+T5 o un LLM), no un BERT enmascarado, que solo sustituye palabras sueltas (seccion 6.8). Sin probar.
 Los grupos son un BORRADOR redactado a partir del vocabulario del corpus (y del lexico de lexicon.py); se
 revisa con una persona antes de darlos por buenos.
 """
