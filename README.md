@@ -5,8 +5,8 @@ Prioriza una solución **práctica e implementable**: en lugar de un booleano, d
 **banda de decisión** (`permitir` / `revisar` / `ocultar`). El sistema **recomienda**; un humano decide.
 
 > **Estado: niveles Esencial, Medio y Avanzado implementados** (ensemble, análisis por URL, seguimiento en directo,
-> red recurrente evaluada, Docker, extensión de navegador). El despliegue público en una VM se hace con la guía de
-> [`deploy/`](deploy/README.md). Experto (transformer, base de datos, MLflow) en el roadmap.
+> red recurrente evaluada, Docker, extensión de navegador). **Desplegado y funcionando** tras un proxy inverso con
+> HTTPS, siguiendo la guía de [`deploy/`](deploy/README.md). Experto (transformer, base de datos, MLflow) en el roadmap.
 
 ## Resultados (léelos con sentido crítico)
 
@@ -180,7 +180,7 @@ servidor y HTTPS (ver privacidad en su README).
 |---|---|---|
 | Esencial | Modelo ML + API/interfaz + repo documentado | ✅ |
 | Medio | Ensemble + análisis por URL de vídeo + tests + tuning (Optuna) | ✅ |
-| Avanzado | LSTM + seguimiento en tiempo real + despliegue público + Docker | ✅ Implementado (LSTM **sin** mejora sobre ML clásico, resultado medido y documentado; despliegue: guía lista, lo ejecuta el usuario) |
+| Avanzado | LSTM + seguimiento en tiempo real + despliegue público + Docker | ✅ Completo. LSTM **sin** mejora sobre ML clásico (resultado medido y documentado); **desplegado y verificado** con HTTPS y clave de API |
 | Experto | Transformer + persistencia en BD + MLflow | Parcial: **persistencia en BD hecha** (cola de revisión); transformer y MLflow pendientes |
 
 ## Estructura

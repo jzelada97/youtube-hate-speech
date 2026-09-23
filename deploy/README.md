@@ -32,7 +32,8 @@ cp .env.example .env
 
 ```bash
 docker compose --env-file .env up -d --build
-docker compose ps            # api debe aparecer "healthy"
+docker compose ps            # api y ui deben aparecer "healthy" (la ui tarda ~20 s mas)
+# Espera a que salgan de "health: starting": un contenedor recien arrancado aun no dice la verdad.
 curl -s http://127.0.0.1:8000/health
 ```
 
@@ -86,3 +87,4 @@ git pull && docker compose --env-file .env up -d --build
 | Error CORS desde una web | Añade su origen a `HATEDET_CORS_REGEX`. |
 | `/analyze/video` devuelve 502 | YouTube cambió su HTML (actualiza `youtube-comment-downloader`) o no se puede acceder al vídeo; con `YOUTUBE_API_KEY` se usa la API oficial. |
 | Certificado no se emite | El dominio no apunta a la IP de la VM o los puertos 80/443 están cerrados. |
+| El contenedor `ui` sale `unhealthy` pero la demo funciona | Imagen antigua: el `HEALTHCHECK` de la imagen consulta el 8000 (la API) y la UI escucha en el 8501. Corregido con un healthcheck propio en `docker-compose.yml`; actualiza con `git pull` y recrea el contenedor. |

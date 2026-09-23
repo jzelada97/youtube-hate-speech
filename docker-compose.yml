@@ -34,7 +34,19 @@ services:
       - "127.0.0.1:${HATEDET_UI_PORT:-8501}:8501"   # idem: HATEDET_UI_PORT si el 8501 esta ocupado
     environment:
       HATEDET_API_URL: http://api:8000
+      # Sin esto la demo recibe 401 en cada prediccion si la API exige clave. Se usa SOLO en el servidor de
+      # Streamlit (ver ui/app.py): no se precarga en el formulario, para no enviarsela al navegador del visitante.
+      HATEDET_API_KEY: ${HATEDET_API_KEY:-}
     command: ["streamlit", "run", "src/hatedet/ui/app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.headless=true"]
+    # La imagen es unica y su HEALTHCHECK consulta el 8000 (la API). Aqui solo corre Streamlit en el 8501, asi que
+    # sin este override el contenedor queda "unhealthy" para siempre aunque el servicio funcione.
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request as u; u.urlopen('http://localhost:8501/_stcore/health', timeout=4)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     read_only: true
     tmpfs:
       - /tmp

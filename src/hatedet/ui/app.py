@@ -24,7 +24,9 @@ st.caption("Comentarios de YouTube · clasificador TF-IDF + regresión logístic
 with st.sidebar:
     st.header("Conexión")
     api_url = st.text_input("URL de la API", DEFAULT_API_URL)
-    api_key = st.text_input("Clave de API (opcional)", type="password")
+    # Respaldo desde el entorno (HATEDET_API_KEY) para que la demo desplegada funcione sin teclear nada. NO se
+    # precarga en el campo a proposito: el valor de un widget viaja al navegador, y esta demo es publica.
+    api_key = st.text_input("Clave de API (opcional)", type="password") or os.getenv("HATEDET_API_KEY", "")
     headers = {"X-API-Key": api_key} if api_key else {}
 
 
