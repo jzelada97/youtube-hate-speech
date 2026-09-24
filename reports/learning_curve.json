@@ -1,0 +1,47 @@
+{
+  "protocolo": "CV estratificada repetida 5x3, semilla 42, submuestreo estratificado",
+  "modelo": "build_baseline_pipeline() sin aumentacion",
+  "curva": [
+    {
+      "fraccion": 0.15,
+      "n_entrenamiento": 95,
+      "n_positivos": 13,
+      "f1_macro_validacion": 0.65,
+      "f1_macro_entrenamiento": 0.6698,
+      "desviacion_validacion": 0.0798
+    },
+    {
+      "fraccion": 0.3,
+      "n_entrenamiento": 191,
+      "n_positivos": 26,
+      "f1_macro_validacion": 0.6803,
+      "f1_macro_entrenamiento": 0.6987,
+      "desviacion_validacion": 0.0366
+    },
+    {
+      "fraccion": 0.5,
+      "n_entrenamiento": 319,
+      "n_positivos": 44,
+      "f1_macro_validacion": 0.6846,
+      "f1_macro_entrenamiento": 0.7003,
+      "desviacion_validacion": 0.0382
+    },
+    {
+      "fraccion": 0.75,
+      "n_entrenamiento": 478,
+      "n_positivos": 66,
+      "f1_macro_validacion": 0.6943,
+      "f1_macro_entrenamiento": 0.7041,
+      "desviacion_validacion": 0.0381
+    },
+    {
+      "fraccion": 1.0,
+      "n_entrenamiento": 638,
+      "n_positivos": 88,
+      "f1_macro_validacion": 0.6983,
+      "f1_macro_entrenamiento": 0.7115,
+      "desviacion_validacion": 0.037
+    }
+  ],
+  "lectura": "Multiplicar los datos por 6.7 sube el F1-macro +4.8 pp. Las curvas de entrenamiento y validacion estan pegadas: regimen de alto sesgo, techo por representacion y etiquetas, no por falta de datos."
+}
