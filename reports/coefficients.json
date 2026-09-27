@@ -1,0 +1,26 @@
+{
+  "modelo": "ensemble_v1 / miembro lr_word",
+  "pesos_del_voto": [
+    4,
+    3,
+    1
+  ],
+  "n_variables": 777,
+  "n_no_nulos": 12,
+  "intercepto": -0.7897,
+  "coeficientes": {
+    "grp": 6.243,
+    "thug": 6.1989,
+    "isi": 2.6483,
+    "stupid": 2.1845,
+    "like": 1.0544,
+    "earth": 0.9267,
+    "back": 0.8963,
+    "intellig": 0.5722,
+    "anim": 0.5172,
+    "blm": 0.0583,
+    "cop": -0.1935,
+    "polic": -0.3067
+  },
+  "lectura": "L1 dejo vivas 12 de 777 variables. El coeficiente mayor es `grp`, el token con el que se sustituyen los terminos de identidad: el modelo es, en buena parte, un detector de menciones a grupos (ver seccion 13.4)."
+}
